@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+dataset/
+models/
+logs/
+*.h5
+.idea/
+*.iml
+*.DS_Store
+.ipynb_checkpoints/
