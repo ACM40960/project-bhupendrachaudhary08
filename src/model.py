@@ -33,6 +33,8 @@ def load_dataset(sign_labels):
                         landmarks.append(frames)
                         labels.append(index)
         landmarks, labels = np.array(landmarks), np.array(labels)
+        # Reshape landmarks to include channel dimension for CNN
+        # landmarks = landmarks[..., np.newaxis]
         return landmarks, labels
     except Exception as e:
         logging.error(f"Error loading data: {e}")
@@ -50,10 +52,8 @@ def prepare_data(landmarks, labels, num_classes):
     :return: Training and testing data.
     """
     try:
-        labels = tf.keras.utils.to_categorical(
-            labels, num_classes=num_classes).astype(int)
-        landmarks_train, landmarks_test, labels_train, labels_test = train_test_split(
-            landmarks, labels, test_size=0.2)
+        labels = tf.keras.utils.to_categorical(labels, num_classes=num_classes).astype(int)
+        landmarks_train, landmarks_test, labels_train, labels_test = train_test_split(landmarks, labels, test_size=0.2)
         return landmarks_train, landmarks_test, labels_train, labels_test
     except Exception as e:
         logging.error(f"Error preparing data: {e}")
@@ -100,9 +100,7 @@ def train_model(model, landmarks_train, labels_train, landmarks_test, labels_tes
     try:
         log_dir = os.path.join(LOGS_PATH)
         callbacks = [
-            # EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True),
             tf.keras.callbacks.TensorBoard(log_dir=log_dir),
-            # ModelCheckpoint('model.keras', save_best_only=True, monitor='val_loss'),
             tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=0.00001)
         ]
         history = model.fit(landmarks_train, labels_train,
