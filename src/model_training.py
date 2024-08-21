@@ -78,8 +78,11 @@ def plot_roc_and_pr_curves(y_test: np.ndarray, y_score: np.ndarray, classes: np.
     # Get colors from the 'tab20' colormap
     colormap = plt.get_cmap('tab20')
     colors = cycle(colormap(i) for i in range(20))  # Extract colors from the colormap
-    for i, color in zip(top_classes, colors):
-        plt.plot(fpr[i], tpr[i], color=color, lw=2, label=f'ROC curve for {classes[i]} (AUC = {roc_auc[i]:0.2f})')
+    for i, color in zip(range(n_classes), colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=2)
+        if i in top_classes:
+            plt.plot(fpr[i], tpr[i], color=color, lw=2,
+                     label=f'ROC curve for {classes[i]} (AUC = {roc_auc[i]:0.2f})')
     plt.plot([0, 1], [0, 1], 'k--', lw=2, label='Chance level (AUC = 0.5)')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
@@ -90,8 +93,11 @@ def plot_roc_and_pr_curves(y_test: np.ndarray, y_score: np.ndarray, classes: np.
 
     # Plot Precision-Recall Curve
     plt.subplot(1, 2, 2)
-    for i, color in zip(top_classes, colors):
-        plt.plot(recall[i], precision[i], color=color, lw=2, label=f'PR curve for {classes[i]} (AP = {pr_auc[i]:0.2f})')
+    for i, color in zip(range(n_classes), colors):
+        plt.plot(recall[i], precision[i], color=color, lw=2)
+        if i in top_classes:
+            plt.plot(recall[i], precision[i], color=color, lw=2,
+                     label=f'PR curve for {classes[i]} (AP = {pr_auc[i]:0.2f})')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('Recall')
@@ -124,6 +130,22 @@ def plot_confusion_matrix(cm: np.ndarray, labels: np.ndarray) -> None:
     plt.show()
 
 
+def save_classification_report_as_png(report: str, filename: str) -> None:
+    """
+    Save the classification report as a PNG file.
+
+    :param report: Classification report as a string.
+    :param filename: Filename to save the PNG file.
+    :return: None
+    """
+    # Create a figure and axis
+    plt.figure(figsize=(10, 6))
+    plt.text(0.01, 0.05, str(report), {'fontsize': 10}, fontproperties='monospace')  # Use monospace font
+    plt.axis('off')  # Hide the axes
+    plt.savefig(filename, bbox_inches='tight', dpi=150)  # Save the plot as a PNG file
+    plt.close()
+
+
 def train_model() -> None:
     """
     Train a RandomForest model on the extracted dataset, evaluate it, and save the trained model.
@@ -138,9 +160,17 @@ def train_model() -> None:
         labels = np.asarray(data_dict['labels'])
 
         # Split the dataset into training and testing sets
-        x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, shuffle=True, stratify=labels)
+        x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, shuffle=True, stratify=labels, random_state=42)
 
-        model = RandomForestClassifier()
+        model = RandomForestClassifier(
+            n_estimators=100,  # Number of trees
+            max_depth=15,  # Maximum depth of the tree
+            min_samples_split=5,  # Minimum number of samples required to split an internal node
+            min_samples_leaf=3,  # Minimum number of samples required to be at a leaf node
+            random_state=42,  # Random state for reproducibility
+            class_weight="balanced",  # Handle class imbalance
+            n_jobs=-1  # Use all available cores
+        )
 
         # Train the model
         model.fit(x_train, y_train)
@@ -170,8 +200,14 @@ def train_model() -> None:
         plot_roc_and_pr_curves(y_test, y_score, classes=np.unique(labels))
 
         # Print classification report
+        report = classification_report(y_test, y_test_pred, target_names=np.unique(labels))
         logging.info("Classification Report:")
-        logging.info("\n" + classification_report(y_test, y_test_pred, target_names=np.unique(labels)))
+        logging.info("\n" + report)
+
+        # Save the classification report as a PNG file
+        report_filename = os.path.join(ARTIFACTS_DIR, 'classification_report.png')
+        save_classification_report_as_png(report, report_filename)
+        logging.info(f"Classification report saved as {report_filename}")
 
         # Save the trained model
         os.makedirs(ARTIFACTS_DIR, exist_ok=True)

@@ -1,5 +1,6 @@
 import cv2
 import logging
+from matplotlib import pyplot as plt
 import mediapipe as mp
 import os
 import pickle
@@ -31,6 +32,7 @@ def create_dataset() -> None:
                 continue
             for img_file in os.listdir(label_dir):
                 if img_file.endswith(".jpg"):
+                    logging.info(f"Processing image file: {img_file} for {label}")
                     data_aux = []
                     x_coords, y_coords, z_coords = [], [], []
                     image_path = os.path.join(label_dir, img_file)
@@ -55,6 +57,8 @@ def create_dataset() -> None:
                                 data_aux.extend([lm.x - x_min, lm.y - y_min, lm.z - z_min])
                         data.append(data_aux)
                         labels.append(label)
+                    else:
+                        logging.warning(f"No hand landmarks detected for {img_file} for {label}")
                     # plt.figure()
                     # plt.imshow(image_rgb)
                     # break

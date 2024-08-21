@@ -7,20 +7,23 @@ import os
 import pickle
 import pygame
 from threading import Thread
+import time
 
 from config import ARTIFACTS_DIR, BASE_DIR, LOGGING_FORMAT, LOGGING_LEVEL, MODEL_FILENAME
 
 # Configure logging
 logging.basicConfig(level=LOGGING_LEVEL, format=LOGGING_FORMAT)
 
-# Initialize MediaPipe Hands solution
+# Initialise MediaPipe Hands solution
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 hands = mp_hands.Hands(static_image_mode=True, min_detection_confidence=0.3)
 
-# Initialize pygame mixer for playing sounds
+# Initialise pygame mixer for playing sounds
 pygame.mixer.init()
+
+MAX_SENTENCE_LENGTH = 5  # Maximum allowed length of the sentence
 
 
 def play_sound_for_prediction(prediction: str) -> None:
@@ -53,8 +56,18 @@ def run_sign_language_interpreter() -> None:
 
         cap = cv2.VideoCapture(0)
 
+        # Set the width and height
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+        window_name = "Sign Language Interpreter"
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+
         prediction_history = deque(maxlen=5)  # Queue to store the last 5 predictions
         last_prediction = None
+        sentence = ""
+        error_message = ""
 
         while True:
             success, frame = cap.read()
@@ -68,6 +81,7 @@ def run_sign_language_interpreter() -> None:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = hands.process(frame_rgb)
             if results.multi_hand_landmarks:
+                error_message = ""
                 for hand_landmarks in results.multi_hand_landmarks:
                     mp_drawing.draw_landmarks(
                         frame,
@@ -107,15 +121,45 @@ def run_sign_language_interpreter() -> None:
                 else:
                     logging.error(f"Feature count mismatch: expected {model.n_features_in_}, got {len(data_aux)}")
                     error_message = "Error: Feature count mismatch or Multiple hands detected"
-                    cv2.putText(frame, error_message, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
                     prediction_history.clear()
 
-                # Show a message to the user on how to quit the program
-            quit_message = "Press 'q' to quit"
-            cv2.putText(frame, quit_message, (50, frame.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0),2)
+            # Handle key presses
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord(' '):  # Space key pressed to confirm the letter
+                if len(sentence) < MAX_SENTENCE_LENGTH:
+                    if last_prediction:
+                        sentence += last_prediction
+                        last_prediction = None
+                        prediction_history.clear()
+                        cv2.waitKey(200)  # Add a 2-second delay before continuing
+                else:
+                    error_message = "Error: Sentence length limit reached"
+            elif key == ord('s') or key == ord('S'):  # 's' key pressed to add a space to the sentence
+                if len(sentence) < MAX_SENTENCE_LENGTH:
+                    sentence += ' '
+                    time.sleep(1)  # Add a slight delay after adding a space
+                else:
+                    error_message = "Error: Sentence length limit reached"
+            elif key == ord('b') or key == ord('B'):  # Backspace key pressed to delete the last letter
+                sentence = sentence[:-1]
+                error_message = ""  # Clear the error message when the user deletes characters
+            elif key == ord('q') or key == ord('Q'):  # Quit the program
+                break
 
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            # Display the sentence at the top of the screen
+            cv2.putText(frame, sentence, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+            # Show a message to the user on how to quit the program
+            quit_message = "Press 'q' to quit | 'space' to confirm | 's' to add space | 'b' to delete"
+            cv2.putText(frame, quit_message, (50, frame.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0),
+                        2)
+            # Display the error message if the sentence length limit is reached
+            if error_message:
+                cv2.putText(frame, error_message, (50, frame.shape[0] - 100), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+            cv2.imshow(window_name, frame)
+
+            # Check if the window was closed unexpectedly
+            if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
+                logging.info("Window closed. Exiting...")
                 break
 
         cap.release()
