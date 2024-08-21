@@ -6,7 +6,7 @@ import os
 import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, auc, precision_recall_curve
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.preprocessing import label_binarize
 import pickle
 
@@ -88,7 +88,7 @@ def plot_roc_and_pr_curves(y_test: np.ndarray, y_score: np.ndarray, classes: np.
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Top Class ROC Curves')
+    plt.title('ROC Curves')
     plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize='small')
 
     # Plot Precision-Recall Curve
@@ -102,7 +102,7 @@ def plot_roc_and_pr_curves(y_test: np.ndarray, y_score: np.ndarray, classes: np.
     plt.ylim([0.0, 1.05])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.title('Top Class Precision-Recall Curves')
+    plt.title('Precision-Recall Curves')
     plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize='small')
 
     plt.tight_layout()
@@ -162,15 +162,20 @@ def train_model() -> None:
         # Split the dataset into training and testing sets
         x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, shuffle=True, stratify=labels, random_state=42)
 
+        # Simplified RandomForest model
         model = RandomForestClassifier(
-            n_estimators=100,  # Number of trees
-            max_depth=15,  # Maximum depth of the tree
-            min_samples_split=5,  # Minimum number of samples required to split an internal node
-            min_samples_leaf=3,  # Minimum number of samples required to be at a leaf node
-            random_state=42,  # Random state for reproducibility
+            n_estimators=50,  # Fewer trees
+            max_depth=10,  # Shallower trees
+            min_samples_split=10,  # Require more samples to split a node
+            min_samples_leaf=5,  # Require more samples at each leaf node
+            random_state=42,  # Reproducibility
             class_weight="balanced",  # Handle class imbalance
             n_jobs=-1  # Use all available cores
         )
+
+        # Perform k-fold cross-validation
+        cv_scores = cross_val_score(model, x_train, y_train, cv=5)
+        logging.info(f"Cross-validation accuracy: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
 
         # Train the model
         model.fit(x_train, y_train)
