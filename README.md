@@ -1,6 +1,6 @@
-<div style="display: flex; justify-content: center; align-items: center">
-  <img src="images/logo.jpg" alt="Project Logo" width="150" height="150" style="border-radius: 10%;" />
-  <strong style="font-size: 3rem; margin-left: 1rem">Sign Language Interpreter</strong>
+<div align="center">
+  <img src="images/logo.jpg" alt="Project Logo" width="150" height="150" />
+  <h1>Sign Language Interpreter</h1>
 </div>
 
 ![Python](https://img.shields.io/badge/Python-v3.10%2B-blue)
