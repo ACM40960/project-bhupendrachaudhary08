@@ -13,7 +13,7 @@ logging.basicConfig(level=LOGGING_LEVEL, format=LOGGING_FORMAT)
 os.makedirs(DATASET_DIR, exist_ok=True)
 
 
-def capture_images_new(labels: dict[int, str], num_samples: int = 50) -> bool:
+def capture_images_new(labels: dict[int, str], num_samples: int = 200) -> bool:
     """
     Capture images for each label using the webcam and store them in the dataset directory.
     :param labels: Dictionary mapping indices to labels (int -> str).
@@ -31,28 +31,54 @@ def capture_images_new(labels: dict[int, str], num_samples: int = 50) -> bool:
 
             # Check if the directory exists to determine existing and remaining images
             if os.path.exists(label_dir):
-                # Determine how many images already exist
-                existing_images = len([img for img in os.listdir(label_dir) if img.endswith(".jpg")])
-                remaining_images = num_samples - existing_images
-            else:
-                existing_images = 0
-                remaining_images = num_samples
+                existing_images = len(
+                    [img for img in os.listdir(label_dir) if img.endswith(".jpg")])
+                if existing_images > 0:
+                    logging.error(f"Images already exist for label '{
+                                  label}'. Either delete them or press ESC to skip.")
+                    while True:
+                        success, frame = cap.read()
+                        if not success:
+                            logging.warning("Ignoring empty camera frame.")
+                            continue
 
-            if remaining_images <= 0:
-                logging.info(f"Already have {num_samples} images for label '{label}'. Skipping...")
-                continue
+                        cv2.putText(frame, f"Images exist for '{label}'. Delete them or press ESC to skip.",
+                                    (20, frame.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                        cv2.imshow("Frame", frame)
+                        interrupt = cv2.waitKey(10)
 
-            logging.info(f"Starting capture for label '{label}'. Need {remaining_images} more images.")
+                        if interrupt & 0xFF == 27:  # ESC to skip this label
+                            logging.info(
+                                f"User chose to skip label '{label}'.")
+                            break
+
+                        if interrupt & 0xFF == ord('q'):  # Quit the program
+                            logging.info("User pressed 'q'. Exiting program.")
+                            cap.release()
+                            cv2.destroyAllWindows()
+                            return False
+
+                    continue  # Skip this label if ESC was pressed
+            remaining_images = num_samples
+            current_hand = "Right Hand"
+            half_samples = num_samples // 2
+            allow_skip_or_quit = True
+            logging.info(f"Starting capture for label '{label}'")
             interrupt = -1
             while remaining_images > 0:
                 success, frame = cap.read()
 
                 if not success:
-                    logging.warning("Ignoring empty camera frame.")  # Log a warning message
+                    # Log a warning message
+                    logging.warning("Ignoring empty camera frame.")
                     continue
 
                 # Display instructions on the frame
-                instruction_text = f"Press SPACE to start capturing for label '{label}' or 'q' to quit or 'esc' to skip."
+                if current_hand == "Right Hand":
+                    instruction_text = f"Press SPACE to start capturing for '{
+                        label}' for RIGHT hand or 'q' to quit."
+                else:
+                    instruction_text = "Switch to your LEFT hand and press SPACE to continue..."
                 cv2.putText(frame, instruction_text, (20, frame.shape[0] - 20),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
@@ -60,14 +86,14 @@ def capture_images_new(labels: dict[int, str], num_samples: int = 50) -> bool:
 
                 interrupt = cv2.waitKey(10)
 
-                if interrupt & 0xFF == ord('q'):
+                if allow_skip_or_quit and (interrupt & 0xFF == ord('q') or interrupt & 0xFF == ord('Q')):
                     # Quit the program if 'q' is pressed
                     logging.info("User pressed 'q'. Exiting program.")
                     cap.release()
                     cv2.destroyAllWindows()
                     return False
 
-                if interrupt & 0xFF == 27:
+                if allow_skip_or_quit and interrupt & 0xFF == 27:
                     # esc key
                     break
 
@@ -76,7 +102,8 @@ def capture_images_new(labels: dict[int, str], num_samples: int = 50) -> bool:
                     if not os.path.exists(label_dir):
                         os.makedirs(label_dir, exist_ok=True)
 
-                    logging.info(f"Starting capture for label '{label}'. Need {remaining_images} more images.")
+                    logging.info(f"Starting capture for label '{label}'. Need {
+                                 remaining_images} more images.")
 
                     # Countdown before capturing starts
                     start_time = time.time()
@@ -94,26 +121,38 @@ def capture_images_new(labels: dict[int, str], num_samples: int = 50) -> bool:
 
                         cv2.waitKey(100)  # Small delay for display
 
+                    # Capture images for the current hand
+                    images_to_capture = half_samples if current_hand == "Right Hand" else remaining_images
+
                     # Capture the required number of images
-                    while remaining_images > 0:
+                    while images_to_capture > 0:
                         success, frame = cap.read()
                         if not success:
                             logging.warning("Ignoring empty camera frame.")
                             continue
 
+                        img_count = num_samples - remaining_images + 1
+
                         # Display the count of captured images on the main frame
-                        cv2.putText(frame, f"Capturing image {num_samples - remaining_images + 1}/{num_samples}",
-                                    (20, frame.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0),
+                        cv2.putText(frame, f"Capturing image {img_count}/{num_samples} ({current_hand})",
+                                    (20, frame.shape[0] -
+                                     20), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0),
                                     2, cv2.LINE_AA)
-                        img_path = os.path.join(label_dir, f"{num_samples - remaining_images + 1}.jpg")
+                        img_path = os.path.join(
+                            label_dir, f"{num_samples - remaining_images + 1}.jpg")
                         cv2.imwrite(img_path, frame)
                         cv2.imshow("Frame", frame)
-                        logging.info(f"Captured image {num_samples - remaining_images + 1} for label '{label}'")
+                        logging.info(f"Captured image {img_count} for label '{
+                                     label}' ({current_hand})")
+                        images_to_capture -= 1
                         remaining_images -= 1  # Decrease the remaining image count
-                        cv2.waitKey(100)  # Small delay between captures to avoid duplicates
-                    logging.info(f"Finished capturing {num_samples} images for label '{label}'.")
-            if interrupt & 0xFF == ord('q'):
-                break
+                        # Small delay between captures to avoid duplicates
+                        cv2.waitKey(100)
+                    if current_hand == "Right Hand" and remaining_images > 0:
+                        current_hand = "Left Hand"
+                        allow_skip_or_quit = False  # Disallow skipping or quitting after right hand capture
+            logging.info(f"Finished capturing {
+                         num_samples} images for label '{label}'.")
         cap.release()
         cv2.destroyAllWindows()
         return True
