@@ -1,6 +1,5 @@
 import cv2
 import logging
-from matplotlib import pyplot as plt
 import mediapipe as mp
 import os
 import pickle
@@ -48,8 +47,6 @@ def create_dataset() -> None:
             for img_file in os.listdir(label_dir):
                 if img_file.endswith(".jpg"):
                     logging.info(f"Processing image file: {img_file} for {label}")
-                    # data_aux = []
-                    # x_coords, y_coords, z_coords = [], [], []
                     image_path = os.path.join(label_dir, img_file)
                     image = cv2.imread(image_path)
 
@@ -64,11 +61,6 @@ def create_dataset() -> None:
                         result = hands.process(image_rgb)
                         if result.multi_hand_landmarks:
                             for hand_landmarks in result.multi_hand_landmarks:
-                                # mp_drawing.draw_landmarks(
-                                #     image_rgb,
-                                #     hand_landmarks,
-                                #     mp_hands.HAND_CONNECTIONS,
-                                # )
                                 for lm in hand_landmarks.landmark:
                                     x_coords.append(lm.x)
                                     y_coords.append(lm.y)
@@ -81,14 +73,10 @@ def create_dataset() -> None:
                             labels.append(label)
                         else:
                             logging.warning(f"No hand landmarks detected for {img_file} for {label}")
-                    # plt.figure()
-                    # plt.imshow(image_rgb)
-                    # break
         os.makedirs(ARTIFACTS_DIR, exist_ok=True)  # Ensure artifacts folder exists
         with open(os.path.join(ARTIFACTS_DIR, DATA_PICKLE_FILENAME), 'wb') as f:
             pickle.dump({'data': data, 'labels': labels}, f)
         logging.info(f"Dataset created and saved to {os.path.join(ARTIFACTS_DIR, DATA_PICKLE_FILENAME)}")
-        # plt.show()
     except Exception as e:
         logging.error(f"An error occurred while creating the dataset: {e}")
 
