@@ -226,8 +226,7 @@ python src/data_collection.py
 
 The captured images will be stored in the `dataset/` directory, with subfolders for each label.
 
-[//]: # "#### Example Screenshot:"
-[//]: # "![Data Collection](./docs/images/data-collection.png)"
+![Data Collection](images/data-collection.png)
 
 ## Dataset Creation
 
@@ -241,8 +240,7 @@ python src/data_creation.py
 
 This script processes the images using MediaPipe, extracts hand landmarks, and saves the processed data as a pickle file in the `artifacts/` directory.
 
-[//]: # "#### Example Screenshot:"
-[//]: # "![Dataset Creation](./docs/images/dataset-creation.png)"
+![Dataset Creation](images/data-creation.png)
 
 ### Step 2: Verify the Dataset
 
@@ -277,6 +275,10 @@ During training, the following plots are generated to assess the model's perform
 
 ![ROC Curve](images/roc-curve.png)
 
+#### Classification Report
+
+![Classification Report](images/classification_report.png)
+
 ## Real-Time Interpretation
 
 ### Step 1: Run the Interpretation Script
@@ -295,8 +297,9 @@ python src/app.py
 - **Delete the Last Confirmed Letter:** If you make a mistake, you can delete the last confirmed letter by pressing the `B` key.
 - **Add Space:** Press the `S` key to add a space between words.
 
-[//]: # "#### Example Video:"
-[//]: # "Add a video here showcasing the real-time gesture recognition in action."
+#### Demo:
+![Real Time Interpretation1](images/Testing1.gif)
+![Real Time Interpretation2](images/Testing2.gif)
 
 ## Results
 
