@@ -43,11 +43,12 @@ Communication is important for everyone, but people in the Deaf and Mute (D&M) c
    - [Step 2: Interact with the System](#step-2-interact-with-the-system)
 9. [Results](#results)
    - [Key Metrics](#key-metrics)
-10. [Future Work](#future-work)
-11. [Contributing](#contributing)
-12. [License](#license)
-13. [Contact](#contact)
-14. [Credits](#credits)
+10. [Project Poster](#project-poster)
+11. [Future Work](#future-work)
+12. [Contributing](#contributing)
+13. [License](#license)
+14. [Contact](#contact)
+15. [Credits](#credits)
 
 ## Abstract
 
@@ -313,6 +314,16 @@ The trained model successfully recognises the following ASL gestures:
 - **Accuracy:** 100% on the test set.
 - **AUC:** 1.00 for all gestures.
 - **Precision-Recall:** 1.00 for all gestures.
+
+To include the **Poster** in your README file, you can add a section under "Results" or create a new section like "Project Poster" with a brief description and a link to view the PDF. Here's how you can do it:
+
+---
+
+## Project Poster
+
+For a detailed visual overview of the project, you can view the project poster, which summarises the methodology, results, and future scope.
+
+[**Download the Poster (PDF)**](Poster.pdf)
 
 ## Future Work
 
