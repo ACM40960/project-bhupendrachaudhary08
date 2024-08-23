@@ -26,6 +26,15 @@ def capture_images_new(labels: dict[int, str], num_samples: int = 200) -> bool:
         if not cap.isOpened():
             logging.error("Cannot access camera")
             return False
+
+        # Set the width and height
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+
+        window_name = "Frame"
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+
         for key, label in labels.items():
             label_dir = os.path.join(DATASET_DIR, label)
 

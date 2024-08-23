@@ -23,7 +23,7 @@ hands = mp_hands.Hands(static_image_mode=True, min_detection_confidence=0.3)
 # Initialise pygame mixer for playing sounds
 pygame.mixer.init()
 
-MAX_SENTENCE_LENGTH = 5  # Maximum allowed length of the sentence
+MAX_CHARACTER_LENGTH = 30  # Maximum allowed length of the characters
 
 
 def play_sound_for_prediction(prediction: str) -> None:
@@ -56,9 +56,13 @@ def run_sign_language_interpreter() -> None:
 
         cap = cv2.VideoCapture(0)
 
+        if not cap.isOpened():
+            logging.error("Cannot access camera")
+            return
+
         # Set the width and height
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
         window_name = "Sign Language Interpreter"
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
@@ -74,7 +78,7 @@ def run_sign_language_interpreter() -> None:
             if not success:
                 logging.error("Failed to capture frame from camera.")
                 break
-            # frame = cv2.flip(frame, 1)
+
             data_aux = []
             x_coords, y_coords, z_coords = [], [], []
 
@@ -126,7 +130,7 @@ def run_sign_language_interpreter() -> None:
             # Handle key presses
             key = cv2.waitKey(1) & 0xFF
             if key == ord(' '):  # Space key pressed to confirm the letter
-                if len(sentence) < MAX_SENTENCE_LENGTH:
+                if len(sentence) < MAX_CHARACTER_LENGTH:
                     if last_prediction:
                         sentence += last_prediction
                         last_prediction = None
@@ -135,7 +139,7 @@ def run_sign_language_interpreter() -> None:
                 else:
                     error_message = "Error: Sentence length limit reached"
             elif key == ord('s') or key == ord('S'):  # 's' key pressed to add a space to the sentence
-                if len(sentence) < MAX_SENTENCE_LENGTH:
+                if len(sentence) < MAX_CHARACTER_LENGTH:
                     sentence += ' '
                     time.sleep(1)  # Add a slight delay after adding a space
                 else:
