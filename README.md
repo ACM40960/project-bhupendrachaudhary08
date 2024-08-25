@@ -312,12 +312,8 @@ The trained model successfully recognises the following ASL gestures:
 ### Key Metrics:
 
 - **Accuracy:** 100% on the test set.
-- **AUC:** 1.00 for all gestures.
-- **Precision-Recall:** 1.00 for all gestures.
-
-To include the **Poster** in your README file, you can add a section under "Results" or create a new section like "Project Poster" with a brief description and a link to view the PDF. Here's how you can do it:
-
----
+- **AUC:** 1.00 for most gestures.
+- **Precision-Recall:** 1.00 for most gestures.
 
 ## Project Poster
 
